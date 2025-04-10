@@ -22,8 +22,10 @@ const getItems = async (req, res) => {
         .limit(limit);
     items = items.map((item) => {
         return {
-            id: item.id,
+            id: item.id, //TODO why does this work
             name: item.name,
+            quantity: item.quantity,
+            price: item.price
         };
     });
     const total = await Item.countDocuments({ name: re });
