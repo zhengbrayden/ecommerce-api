@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 //define cart sub-schema
-const cartItemSchema = new Schema({
+const cartItemSchema = new mongoose.Schema({
     itemid:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Item',

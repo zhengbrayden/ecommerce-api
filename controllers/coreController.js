@@ -4,6 +4,11 @@ const jwt = require('jsonwebtoken')
 const register = async (req, res) => {
     const { name, email, password } = req.body;
 
+    //validate inputs
+    if ((typeof name !== 'string') || (typeof email !== 'string') || (typeof password !== 'string')) {
+        return res.status(400)
+    }
+
     //check if email is already being used
     let user = await User.findOne({ email });
 
@@ -28,8 +33,10 @@ const login = async (req, res) => {
     //sign in with email and password
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if ((typeof email !== 'string') || (typeof password !== 'string')) {
+        return res.status(400)
     }
+
     //check if this is the correct email and password
     let user = await User.findOne({ email });
 
