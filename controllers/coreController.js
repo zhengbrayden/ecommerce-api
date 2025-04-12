@@ -2,10 +2,10 @@ const User = require("../models/userModel");
 const jwt = require('jsonwebtoken')
 //register user
 const register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
     //validate inputs
-    if ((typeof name !== 'string') || (typeof email !== 'string') || (typeof password !== 'string')) {
+    if ((typeof email !== 'string') || (typeof password !== 'string')) {
         return res.status(400)
     }
 
@@ -17,7 +17,8 @@ const register = async (req, res) => {
     }
 
     //create new user and add to mongoDB
-    user = new User({ name, email, password });
+    const paymentPending = false
+    user = new User({ email, password});
     await user.save();
 
     //create and return a token

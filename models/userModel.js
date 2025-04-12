@@ -12,14 +12,20 @@ const cartItemSchema = new mongoose.Schema({
     quantity: {
         type: Number,
         required: true
-    }
+    },
+
 })
 
 //define user model schema
 const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    cart: [cartItemSchema]
+    cart: [cartItemSchema],
+    paymentPending: {
+        type: Boolean,
+        required: true,
+        default: false
+    }
 });
 
 //hash password before saving
