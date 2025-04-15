@@ -4,7 +4,7 @@ const route = express.Router();
 
 route.use(express.json());
 route.get("/", cartController.getCart);
-route.post("/:id", cartController.postItem);
-route.delete("/:id", cartController.deleteItem);
+route.post("/:itemid", cartController.postItem);
+route.delete("/:itemid", cartController.deleteItem);
 route.put("/", cartController.checkout)
 module.exports = route;

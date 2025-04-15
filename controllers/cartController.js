@@ -32,22 +32,21 @@ const getCart = async (req, res) => {
 const postItem = async(req,res) => {
     //function for adding an item to a users cart. Require the id and the amount
     const { itemid } = req.params
-    
     //input validation
     if (typeof itemid !== "string") {
-        return res.status(400)
+        return res.status(400).send('Invalid input')
     }
 
     const quantity  = Number.parseInt(req.body.quantity)
 
     if (Number.isNaN(quantity)) {
-        return res.status(400)
+        return res.status(400).send('Invalid input')
     }
     //
 
     //quantity must be a positive integer
     if (quantity <= 0) {
-        return res.status(400)
+        return res.status(400).send('Invalid input')
     }
 
     //need a transaction to avoid no-update
@@ -96,8 +95,7 @@ const postItem = async(req,res) => {
             }
 
             user.save({session})
-            session.endSession() //do not hold up transaction with response
-            return res.status(201).json(cartItem);
+            res.status(201).json(cartItem);
         })
     } catch (err) {
         console.error('Transaction error:', err);
@@ -106,6 +104,7 @@ const postItem = async(req,res) => {
             status = 404
         }
         res.status(status).send(err.message)
+    } finally {
         session.endSession()
     }
 }
@@ -116,19 +115,19 @@ const deleteItem = async (req,res) =>{
     
     //input validation
     if (typeof itemid !== "string") {
-        return res.status(400)
+        return res.status(400).send('Invalid input')
     }
 
     const quantity  = Number.parseInt(req.body.quantity)
 
     if (Number.isNaN(quantity)) {
-        return res.status(400)
+        return res.status(400).send('Invalid input')
     }
     //
 
     //quantity must be a positive integer
     if (quantity <= 0) {
-        return res.status(400)
+        return res.status(400).send('Invalid input')
     } 
 
     const session = await mongoose.startSession()
@@ -165,8 +164,7 @@ const deleteItem = async (req,res) =>{
             }
 
             user.save({session})
-            session.endSession()
-            return res.status(204)
+            res.sendStatus(204)
         })
     } catch (err) {
         let status = 400
@@ -175,9 +173,11 @@ const deleteItem = async (req,res) =>{
         }
         console.error('Transaction error:', err);
         res.status(status).send(err.message)
+    } finally {
         session.endSession()
     }
 }
+
 const checkout = async (req, res) => {
     //first, perform a database transaction
     const dbSession = await mongoose.startSession()

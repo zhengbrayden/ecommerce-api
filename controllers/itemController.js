@@ -17,7 +17,7 @@ const getItems = async (req, res) => {
     const limit = Number.parseInt(req.query.limit);
 
     if (Number.isNaN(page) || Number.isNaN(limit)) {
-        return res.status(400)
+        return res.status(400).send('Invalid input')
     }
 
     const re = new RegExp(`^${escapeRegex(search)}`, 'i')

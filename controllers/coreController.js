@@ -6,7 +6,7 @@ const register = async (req, res) => {
 
     //validate inputs
     if ((typeof email !== 'string') || (typeof password !== 'string')) {
-        return res.status(400)
+        return res.status(400).send('Invalid inputs')
     }
 
     //check if email is already being used
@@ -35,7 +35,7 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     if ((typeof email !== 'string') || (typeof password !== 'string')) {
-        return res.status(400)
+        return res.status(400).send()
     }
 
     //check if this is the correct email and password

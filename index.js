@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken')
 const main = async () => {
   const app = express();
   app.use(express.json());
+  
   // Error handler for bad JSON
   app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
