@@ -233,46 +233,46 @@ const checkout = async (req, res) => {
             for (item of items) {
                 item.save({Session})
             }
-
-            dbSession.endSession()
-
-            //send stripe session
-            //build checkout box
-            const line_items = cartItems.map((cartItem) => {
-                const item = itemMap.get(cartItem.itemid)
-                const product_data = {
-                    name: item.name
-                }
-                const price_data = {
-                    currency: 'cad',
-                    product_data: product_data,
-                    unit_amount: item.price
-                }
-
-                return {
-                    price_data: price_data,
-                    quantity: cartItem.quantity
-                }
-            })
-
-            const port = process.env.PORT || 5000;
-
-            const session = await stripe.checkout.sessions.create({
-                line_items: line_items,
-                mode: 'payment',
-                success_url : `localhost:${port}/success.html`,
-                cancel_url: `localhost:${port}/cancel.html`
-            })
-
-            res.redirect(303, session.url)
         })
+
+        dbSession.endSession()
+
+        //send stripe session
+        //build checkout box
+        const line_items = cartItems.map((cartItem) => {
+            const item = itemMap.get(cartItem.itemid)
+            const product_data = {
+                name: item.name
+            }
+            const price_data = {
+                currency: 'cad',
+                product_data: product_data,
+                unit_amount: item.price
+            }
+
+            return {
+                price_data: price_data,
+                quantity: cartItem.quantity
+            }
+        })
+
+        const port = process.env.PORT || 5000;
+
+        const session = await stripe.checkout.sessions.create({
+            line_items: line_items,
+            mode: 'payment',
+            success_url : `localhost:${port}/success.html`,
+            cancel_url: `localhost:${port}/cancel.html`
+        })
+
+        res.redirect(303, session.url)
     } catch (err) {
         let status = 400
         if (err.message === 'Not enough stock for 1 or more items') {
             status = 404
         }
         res.status(status).send(err.message)
-        dbSession.endSession()
+        dbSession.endSession() //possibility that this happens twice? could be bad
     }
 }
 
