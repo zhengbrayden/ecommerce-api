@@ -66,7 +66,7 @@ const postItem = async(req,res) => {
             const itemMap = new Map()
             
             for (cartItem of user.cart) {
-                itemMap.set(cartItem.itemid, cartItem)
+                itemMap.set(cartItem.itemid.toString(), cartItem)
             }
 
             //check if itemid is already in cart
@@ -144,7 +144,7 @@ const deleteItem = async (req,res) =>{
             const itemMap = new Map()
             
             for (cartItem of user.cart) {
-                itemMap.set(cartItem.itemid, cartItem)
+                itemMap.set(cartItem.itemid.toString(), cartItem)
             }
 
             //check if itemid is in cart
