@@ -16,7 +16,7 @@ const getItems = async (req, res) => {
     const page = Number.parseInt(req.query.page);
     const limit = Number.parseInt(req.query.limit);
 
-    if (Number.NaN(page) || Number.NaN(limit)) {
+    if (Number.isNaN(page) || Number.isNaN(limit)) {
         return res.status(400)
     }
 

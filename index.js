@@ -6,6 +6,14 @@ const jwt = require('jsonwebtoken')
 const main = async () => {
   const app = express();
   app.use(express.json());
+  // Error handler for bad JSON
+  app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+      console.error('Bad JSON:', err.message);
+      return res.status(400).json({ error: 'Invalid JSON format in request body' });
+    }
+    next(err);
+  });
 
   const coreRoute = require("./routes/coreRoute"); //route for users
   const itemRoute = require("./routes/itemRoute"); //route for searching for items
