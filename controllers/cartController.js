@@ -51,6 +51,7 @@ const postItem = async(req,res) => {
 
     //need a transaction to avoid no-update
     const session = await mongoose.startSession()
+    let cartItem = {}
 
     try {
         await session.withTransaction(async () =>{
@@ -64,11 +65,9 @@ const postItem = async(req,res) => {
             //want to map cart items by id of item
             const itemMap = new Map()
             
-            for (cartItem in user.cart) {
+            for (cartItem of user.cart) {
                 itemMap.set(cartItem.itemid, cartItem)
             }
-
-            let cartItem = {}
 
             //check if itemid is already in cart
             if (itemMap.has(itemid)) {
@@ -93,10 +92,10 @@ const postItem = async(req,res) => {
             if (cartItem.quantity > item.quantity) {
                 throw new Error("Not enough stock");
             }
-
-            user.save({session})
-            res.status(201).json(cartItem);
+            await user.save({session})
         })
+
+    res.status(201).json(cartItem);
     } catch (err) {
         console.error('Transaction error:', err);
         let status = 400
@@ -144,7 +143,7 @@ const deleteItem = async (req,res) =>{
             //want to map cart items by id of item
             const itemMap = new Map()
             
-            for (cartItem in user.cart) {
+            for (cartItem of user.cart) {
                 itemMap.set(cartItem.itemid, cartItem)
             }
 
@@ -163,9 +162,10 @@ const deleteItem = async (req,res) =>{
 
             }
 
-            user.save({session})
-            res.sendStatus(204)
+            await user.save({session})
         })
+
+    res.sendStatus(204)
     } catch (err) {
         let status = 400
         if (err.message === 'Item not found') {
@@ -224,14 +224,14 @@ const checkout = async (req, res) => {
                     }
                 }
 
-                user.save({session})
+                await user.save({session})
                 //alert the user that there is not enough stock for these items
                 throw new Error('Not enough stock for 1 or more items')
             }
 
             //if cart is valid, save it
             for (item of items) {
-                item.save({Session})
+                await item.save({Session})
             }
         })
 
