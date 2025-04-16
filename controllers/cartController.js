@@ -5,18 +5,17 @@ const stripe = require('stripe')(process.env.STRIPE_KEY)
 
 const getCart = async (req, res) => {
     //get all items in the cart and send the info to the user
-    cart = await User.findById(req.id).cart
+    const cart = (await User.findById(req.id)).cart
     //in the cart we store item ids but we actually need the name to give the user
     const itemIds = cart.map(cartItem => cartItem.itemid)
     const items = await Item.find({ _id: { $in: itemIds } })
     const itemMap = new Map();
 
-    for (item of items) {
+    for (const item of items) {
         itemMap.set(item.id, item)
     }
-
-    data = cart.map(cartItem => {
-        item = itemMap.get(cartItem.itemid)
+    const data = cart.map(cartItem => {
+        const item = itemMap.get(cartItem.itemid.toString())
         if (item) { //in case item is deleted in between database reads
             return {
                 name: item.name,
@@ -52,6 +51,10 @@ const postItem = async(req,res) => {
     //need a transaction to avoid no-update
     const session = await mongoose.startSession()
     let cartItem = {}
+    //error variables
+    let paymentPending = false
+    let notEnoughStock = false
+    let notFound = false
 
     try {
         await session.withTransaction(async () =>{
@@ -59,13 +62,14 @@ const postItem = async(req,res) => {
 
             //check if payment is pending on cart
             if (user.paymentPending) {
-                throw new Error("Payment pending; cannot modify cart")
+                paymentPending = true
+                return
             }
 
             //want to map cart items by id of item
             const itemMap = new Map()
             
-            for (cartItem of user.cart) {
+            for (const cartItem of user.cart) {
                 itemMap.set(cartItem.itemid.toString(), cartItem)
             }
 
@@ -85,27 +89,35 @@ const postItem = async(req,res) => {
             
             //check if item exists
             if (!item) {
-                throw new Error("Item not found");
+                notFound = true
+                return
             }
 
             //check if the quantity in the cart exceeds the stock
             if (cartItem.quantity > item.quantity) {
-                throw new Error("Not enough stock");
+                notEnoughStock = true
+                return
             }
             await user.save({session})
         })
-
-    res.status(201).json(cartItem);
     } catch (err) {
         console.error('Transaction error:', err);
-        let status = 400
-        if (err.message === 'Item not found' || err.message === 'Not enough stock') {
-            status = 404
-        }
-        res.status(status).send(err.message)
-    } finally {
         session.endSession()
+        return res.status(400).send(err.message)
     }
+
+    session.endSession()
+
+    //check for errors
+    if (notFound) {
+        return res.status(404).send('Item not found')
+    } else if (paymentPending) {
+        return res.status(400).send('This cart cannot be modified when payment pending')
+    } else if (notEnoughStock) {
+        return res.status(404).send('Not enough stock')
+    }
+
+    res.status(201).json(cartItem);
 }
 
 const deleteItem = async (req,res) =>{
@@ -130,6 +142,9 @@ const deleteItem = async (req,res) =>{
     } 
 
     const session = await mongoose.startSession()
+    //error variables
+    let paymentPending = false
+    let notFound = false
 
     try {
         await session.withTransaction(async () =>{
@@ -137,19 +152,21 @@ const deleteItem = async (req,res) =>{
 
             //check if payment is pending on cart
             if (user.paymentPending) {
-                throw new Error("Payment pending; cannot modify cart")
+                paymentPending = true
+                return
             }
 
             //want to map cart items by id of item
             const itemMap = new Map()
             
-            for (cartItem of user.cart) {
+            for (const cartItem of user.cart) {
                 itemMap.set(cartItem.itemid.toString(), cartItem)
             }
 
             //check if itemid is in cart
             if (!itemMap.has(itemid)) {
-                throw new Error('Item not found')
+                notFound = true
+                return
             }
 
             const cartItem = itemMap.get(itemid)
@@ -164,44 +181,68 @@ const deleteItem = async (req,res) =>{
 
             await user.save({session})
         })
-
-    res.sendStatus(204)
     } catch (err) {
-        let status = 400
-        if (err.message === 'Item not found') {
-            status = 404
-        }
-        console.error('Transaction error:', err);
-        res.status(status).send(err.message)
-    } finally {
         session.endSession()
+        console.error('Transaction error:', err);
+        return res.status(400).send(err.message)
     }
+
+    //check for errors
+    if (notFound) {
+        return res.status(404).send('Item not found')
+    } else if (paymentPending) {
+        return res.status(400).send('This cart cannot be modified when payment pending')
+    }
+
+    session.endSession()
+    //success
+    res.sendStatus(204)
 }
 
 const checkout = async (req, res) => {
     //first, perform a database transaction
     const dbSession = await mongoose.startSession()
+    let cart;
+    const itemMap = new Map()
+    //error variables
+    let emptyCart = false
+    let invalidCart = false
+    let paymentPending = false
 
     try {
-        await session.withTransaction(async () => {
-            const user = await User.findById(req.id).session(session)
-            const cart = user.cart
-            const itemIds = cart.map((cartItem) => cartItem.itemid)
-            const items = await User.find({_id: { $in : itemIds }})
-            const itemMap = new Map()
-
-            for (item of items) {
-                itemMap.set(item.id, item)
+        await dbSession.withTransaction(async () => {
+            const user = await User.findById(req.id).session(dbSession)
+            cart = user.cart
+            //cant checkout with empty cart
+            if (cart.length === 0) {
+                emptyCart = true
+                return
             }
 
+            //resend payment session?
+            if (user.paymentPending) {
+                paymentPending = true
+                return
+            }
+
+            //get all items in cart
+            const itemIds = cart.map((cartItem) => cartItem.itemid)
+
+            const items = await Item.find({_id: { $in : itemIds }})
+
+            //map items by id
+
+            for (const item of items) {
+                itemMap.set(item.id, item)
+            }
             let invalidItems = new Set()
-        
-            for (cartItem of cart) {
-                const item = itemMap[cartItem.itemid]
+
+            for (const cartItem of cart) {
+                const item = itemMap.get(cartItem.itemid.toString())
 
                 //item may have been deleted, invalid cart
                 if (!item) {
-                    invalidItems.add(cartItem.itemid)
+                    invalidItems.add(cartItem.itemid.toString())
                     continue
                 }
 
@@ -209,7 +250,7 @@ const checkout = async (req, res) => {
 
                 if (item.quantity < 0) {
                     //cannot proceed with this checkout, must remove this item from the cart
-                    invalidItems.add(cartItem.itemid)
+                    invalidItems.add(cartItem.itemid.toString())
                 }
             }
 
@@ -219,61 +260,74 @@ const checkout = async (req, res) => {
                 user.cart = []
 
                 for (cartItem of cart) {
-                    if (!invalidItems.has(cartItem.itemid)) {
+                    if (!invalidItems.has(cartItem.itemid.toString())) {
                         user.cart.push(cartItem)
                     }
                 }
 
-                await user.save({session})
+                await user.save({dbSession})
                 //alert the user that there is not enough stock for these items
-                throw new Error('Not enough stock for 1 or more items')
+                invalidCart = true
+                return
             }
 
             //if cart is valid, save it
-            for (item of items) {
-                await item.save({Session})
+            for (const item of items) {
+                await item.save({dbSession})
             }
+            //set user status to payment pending
+            user.paymentPending = true
+            await user.save({dbSession})
         })
 
+    } catch (err) { //we really just want this to catch transaction errors not all of them
         dbSession.endSession()
-
-        //send stripe session
-        //build checkout box
-        const line_items = cartItems.map((cartItem) => {
-            const item = itemMap.get(cartItem.itemid)
-            const product_data = {
-                name: item.name
-            }
-            const price_data = {
-                currency: 'cad',
-                product_data: product_data,
-                unit_amount: item.price
-            }
-
-            return {
-                price_data: price_data,
-                quantity: cartItem.quantity
-            }
-        })
-
-        const port = process.env.PORT || 5000;
-
-        const session = await stripe.checkout.sessions.create({
-            line_items: line_items,
-            mode: 'payment',
-            success_url : `localhost:${port}/success.html`,
-            cancel_url: `localhost:${port}/cancel.html`
-        })
-
-        res.redirect(303, session.url)
-    } catch (err) {
-        let status = 400
-        if (err.message === 'Not enough stock for 1 or more items') {
-            status = 404
-        }
-        res.status(status).send(err.message)
-        dbSession.endSession() //possibility that this happens twice? could be bad
+        console.error('Transaction error:', err);
+        return res.status(400).send(err.message)
     }
+
+    //no errors try block has successfully completed
+    dbSession.endSession()
+
+    //check if checkout was unable to complete
+    if (emptyCart) {
+        res.status(400).send('Cart is empty')
+        return
+    } else if (invalidCart) {
+        res.status(404).send('Not enough stock for 1 or more items')
+        return
+    } else if (paymentPending) {
+        res.status(400).send('already checking out')
+    }
+
+    //send stripe session
+    //build checkout box
+    const line_items = cart.map((cartItem) => {
+        const item = itemMap.get(cartItem.itemid.toString())
+        const product_data = {
+            name: item.name
+        }
+        const price_data = {
+            currency: 'cad',
+            product_data: product_data,
+            unit_amount: item.price
+        }
+
+        return {
+            price_data: price_data,
+            quantity: cartItem.quantity
+        }
+    })
+
+    const baseUrl = `${req.protocol}://${req.headers.host}`;
+    const session = await stripe.checkout.sessions.create({
+        line_items: line_items,
+        mode: 'payment',
+        success_url : `${baseUrl}/success.html`,
+        cancel_url: `${baseUrl}/cancel.html`
+    })
+
+    res.json({url: session.url})
 }
 
 module.exports = {getCart, postItem, deleteItem, checkout}

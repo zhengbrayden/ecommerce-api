@@ -14,7 +14,7 @@ const cartItemSchema = new mongoose.Schema({
         required: true
     },
 
-})
+}, {_id: false})
 
 //define user model schema
 const userSchema = new mongoose.Schema({
