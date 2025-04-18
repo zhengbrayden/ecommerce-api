@@ -321,6 +321,7 @@ const checkout = async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.headers.host}`;
     const session = await stripe.checkout.sessions.create({
+        client_reference_id: req.id,
         line_items: line_items,
         mode: 'payment',
         success_url : `${baseUrl}/success.html`,
