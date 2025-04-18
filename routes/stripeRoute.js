@@ -3,6 +3,6 @@ const stripeController = require("../controllers/stripeController");
 const route = express.Router();
 
 //middleware
-route.use(express.raw({type: 'application/json'}))
+route.use(express.raw({ type: "application/json" }));
 
-route.post('/webhook', stripeController.fulfillCheckout)
+route.post("/webhook", stripeController.fulfillCheckout);

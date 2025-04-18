@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const cartItemSchema = require("./subSchema/cartItemSchema")
+const cartItemSchema = require("./subSchema/cartItemSchema");
 
 //define user model schema
 const userSchema = new mongoose.Schema({
@@ -10,8 +10,8 @@ const userSchema = new mongoose.Schema({
     paymentPending: {
         type: Boolean,
         required: true,
-        default: false
-    }
+        default: false,
+    },
 });
 
 //hash password before saving

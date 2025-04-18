@@ -1,12 +1,12 @@
 const User = require("../models/userModel");
-const jwt = require('jsonwebtoken')
+const jwt = require("jsonwebtoken");
 //register user
 const register = async (req, res) => {
     const { email, password } = req.body;
 
     //validate inputs
-    if ((typeof email !== 'string') || (typeof password !== 'string')) {
-        return res.status(400).send('Invalid inputs')
+    if (typeof email !== "string" || typeof password !== "string") {
+        return res.status(400).send("Invalid inputs");
     }
 
     //check if email is already being used
@@ -17,8 +17,8 @@ const register = async (req, res) => {
     }
 
     //create new user and add to mongoDB
-    const paymentPending = false
-    user = new User({ email, password});
+    const paymentPending = false;
+    user = new User({ email, password });
     await user.save();
 
     //create and return a token
@@ -34,8 +34,8 @@ const login = async (req, res) => {
     //sign in with email and password
     const { email, password } = req.body;
 
-    if ((typeof email !== 'string') || (typeof password !== 'string')) {
-        return res.status(400).send()
+    if (typeof email !== "string" || typeof password !== "string") {
+        return res.status(400).send();
     }
 
     //check if this is the correct email and password
