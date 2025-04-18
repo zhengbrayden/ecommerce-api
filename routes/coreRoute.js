@@ -15,13 +15,13 @@ const cartRoute = require("./cartRoute");
 const itemRoute = require("./itemRoute");
 const stripeRoute = require("./stripeRoute");
 const transactionRoute = require("./transactionRoute");
-app.use("/cart", cartRoute);
-app.use("/items", itemRoute);
-app.use("/stripe", stripeRoute);
-app.use("/transaction", transactionRoute);
+route.use("/cart", cartRoute);
+route.use("/items", itemRoute);
+route.use("/stripe", stripeRoute);
+route.use("/transaction", transactionRoute);
 
 // Error handler for bad JSON
-app.use((err, req, res, next) => {
+route.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
         console.error("Bad JSON:", err.message);
         return res

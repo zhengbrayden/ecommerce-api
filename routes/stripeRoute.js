@@ -6,3 +6,5 @@ const route = express.Router();
 route.use(express.raw({ type: "application/json" }));
 
 route.post("/webhook", stripeController.fulfillCheckout);
+
+module.exports = route
