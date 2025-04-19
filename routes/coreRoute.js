@@ -18,7 +18,7 @@ const transactionRoute = require("./transactionRoute");
 route.use("/cart", cartRoute);
 route.use("/items", itemRoute);
 route.use("/stripe", stripeRoute);
-route.use("/transaction", transactionRoute);
+route.use("/transactions", transactionRoute);
 
 // Error handler for bad JSON
 route.use((err, req, res, next) => {

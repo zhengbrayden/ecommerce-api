@@ -205,7 +205,7 @@ const deleteItem = async (req, res) => {
 
 const checkout = async (req, res) => {
     //first, perform a database transaction
-    const dbSession = await mongoose.startSession();
+    let session = await mongoose.startSession();
     let cart;
     const itemMap = new Map();
     //error variables
@@ -214,8 +214,8 @@ const checkout = async (req, res) => {
     let paymentPending = false;
 
     try {
-        await dbSession.withTransaction(async () => {
-            const user = await User.findById(req.id).session(dbSession);
+        await session.withTransaction(async () => {
+            const user = await User.findById(req.id).session(session);
             cart = user.cart;
             //cant checkout with empty cart
             if (cart.length === 0) {
@@ -269,7 +269,7 @@ const checkout = async (req, res) => {
                     }
                 }
 
-                await user.save({ dbSession });
+                await user.save({ session });
                 //alert the user that there is not enough stock for these items
                 invalidCart = true;
                 return;
@@ -277,21 +277,21 @@ const checkout = async (req, res) => {
 
             //if cart is valid, save it
             for (const item of items) {
-                await item.save({ dbSession });
+                await item.save({ session });
             }
             //set user status to payment pending
             user.paymentPending = true;
-            await user.save({ dbSession });
+            await user.save({ session });
         });
     } catch (err) {
         //we really just want this to catch transaction errors not all of them
-        dbSession.endSession();
+        session.endSession();
         console.error("Transaction error:", err);
         return res.status(400).send(err.message);
     }
 
     //no errors try block has successfully completed
-    dbSession.endSession();
+    session.endSession();
 
     //check if checkout was unable to complete
     if (emptyCart) {
@@ -324,11 +324,11 @@ const checkout = async (req, res) => {
     });
 
     const baseUrl = `${req.protocol}://${req.headers.host}`;
-    const session = await stripe.checkout.sessions.create({
+    session = await stripe.checkout.sessions.create({
         client_reference_id: req.id,
         line_items: line_items,
         mode: "payment",
-        success_url: `${baseUrl}/success.html`,
+        success_url: `${baseUrl}/transactions/success?sessionId={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/cancel.html`,
     });
 

@@ -1,4 +1,5 @@
 const Transaction = require("./../models/itemModel");
+const fulfillCheckout = require('./utils/fullfillCheckout')
 
 //get items with pagination
 const getTransactions = async (req, res) => {
@@ -17,4 +18,15 @@ const getTransactions = async (req, res) => {
     res.json({ data: transactions, page, limit, total });
 };
 
-module.exports = { getTransactions };
+const success = async (req, res) => {
+    const {sessionId } = req.query
+    //validate query
+    if (typeof sessionId !== "string") {
+        return res.status(400).send("Invalid input"); 
+    }
+
+    fulfillCheckout(sessionId)
+    response.status(200).send('order was successful. View your transaction');
+}
+
+module.exports = { getTransactions , success};
