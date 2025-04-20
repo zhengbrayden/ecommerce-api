@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 //define cart sub-schema
 const cartItemSchema = new mongoose.Schema(
     {
-        itemid: {
+        item: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Item",
             required: true,

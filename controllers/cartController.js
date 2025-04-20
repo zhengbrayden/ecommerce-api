@@ -1,13 +1,17 @@
 const User = require("./../models/userModel");
 const Item = require("./../models/itemModel");
+const SessionLog = require("./../models/sessionLogModel")
+
 const mongoose = require("mongoose");
+const SessionLog = require("./../models/sessionLogModel");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
+const cancelCheckout = require('./utils/cancelCheckout')
 
 const getCart = async (req, res) => {
     //get all items in the cart and send the info to the user
     const cart = (await User.findById(req.id)).cart;
     //in the cart we store item ids but we actually need the name to give the user
-    const itemIds = cart.map((cartItem) => cartItem.itemid);
+    const itemIds = cart.map((cartItem) => cartItem.item);
     const items = await Item.find({ _id: { $in: itemIds } });
     const itemMap = new Map();
 
@@ -15,7 +19,7 @@ const getCart = async (req, res) => {
         itemMap.set(item.id, item);
     }
     const data = cart.map((cartItem) => {
-        const item = itemMap.get(cartItem.itemid.toString());
+        const item = itemMap.get(cartItem.item.toString());
         if (item) {
             //in case item is deleted in between database reads
             return {
@@ -71,7 +75,7 @@ const postItem = async (req, res) => {
             const itemMap = new Map();
 
             for (const cartItem of user.cart) {
-                itemMap.set(cartItem.itemid.toString(), cartItem);
+                itemMap.set(cartItem.item.toString(), cartItem);
             }
 
             //check if itemid is already in cart
@@ -80,7 +84,7 @@ const postItem = async (req, res) => {
                 cartItem.quantity += quantity;
             } else {
                 cartItem = {
-                    itemid: itemid,
+                    item: itemid,
                     quantity: quantity,
                 };
                 user.cart.push(cartItem);
@@ -163,7 +167,7 @@ const deleteItem = async (req, res) => {
             const itemMap = new Map();
 
             for (const cartItem of user.cart) {
-                itemMap.set(cartItem.itemid.toString(), cartItem);
+                itemMap.set(cartItem.item.toString(), cartItem);
             }
 
             //check if itemid is in cart
@@ -223,14 +227,13 @@ const checkout = async (req, res) => {
                 return;
             }
 
-            //resend payment session?
             if (user.paymentPending) {
                 paymentPending = true;
                 return;
             }
 
             //get all items in cart
-            const itemIds = cart.map((cartItem) => cartItem.itemid);
+            const itemIds = cart.map((cartItem) => cartItem.item);
 
             const items = await Item.find({ _id: { $in: itemIds } });
 
@@ -242,19 +245,19 @@ const checkout = async (req, res) => {
             let invalidItems = new Set();
 
             for (const cartItem of cart) {
-                const item = itemMap.get(cartItem.itemid.toString());
+                const item = itemMap.get(cartItem.item.toString());
 
                 //item may have been deleted, invalid cart
                 if (!item) {
-                    invalidItems.add(cartItem.itemid.toString());
+                    invalidItems.add(cartItem.item.toString());
                     continue;
                 }
 
-                item.quantity -= cartItem.quantity; //should the item get removed if there is no more stock?
+                item.quantity -= cartItem.quantity;
 
                 if (item.quantity < 0) {
                     //cannot proceed with this checkout, must remove this item from the cart
-                    invalidItems.add(cartItem.itemid.toString());
+                    invalidItems.add(cartItem.item.toString());
                 }
             }
 
@@ -264,7 +267,7 @@ const checkout = async (req, res) => {
                 user.cart = [];
 
                 for (cartItem of cart) {
-                    if (!invalidItems.has(cartItem.itemid.toString())) {
+                    if (!invalidItems.has(cartItem.item.toString())) {
                         user.cart.push(cartItem);
                     }
                 }
@@ -307,7 +310,7 @@ const checkout = async (req, res) => {
     //send stripe session
     //build checkout box
     const line_items = cart.map((cartItem) => {
-        const item = itemMap.get(cartItem.itemid.toString());
+        const item = itemMap.get(cartItem.item.toString());
         const product_data = {
             name: item.name,
         };
@@ -324,15 +327,77 @@ const checkout = async (req, res) => {
     });
 
     const baseUrl = `${req.protocol}://${req.headers.host}`;
+
     session = await stripe.checkout.sessions.create({
         client_reference_id: req.id,
         line_items: line_items,
         mode: "payment",
-        success_url: `${baseUrl}/transactions/success?sessionId={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/cancel.html`,
+        success_url: `${baseUrl}/transactions/success/` + 
+        `{CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/cart/cancel/{CHECKOUT_SESSION_ID}`,
     });
 
+    //should store the session id in our database for easy access
+    const sessionLog = new SessionLog({user : req.id, sessionId: session.id})
+    await sessionLog.save()
     res.json({ url: session.url });
 };
 
-module.exports = { getCart, postItem, deleteItem, checkout };
+const cancel = async (req,res) => {
+    //get the sessionlog based on user
+    const sessionLog = await SessionLog.findOne({
+        user: req.id
+    })
+
+    if (!sessionLog) {
+        //no sessionlog but checkout status might still be active due to network issues
+        const user = await user.FindById(req.id)
+
+        if (user.paymentPending == false) {
+            return res.status(400).send('No checkout to cancel')
+        }
+
+        //there is an ongoing checkout
+        await cancelCheckout(req.id)
+        return res.status(200).send('Checkout cancelled')
+    }
+
+    //throws an error if the session has already been expired or has completed or if it simply doesnt work
+    await stripe.checkout.sessions.expire(
+    sessionLog.sessionId
+    );
+
+    //delete sessionlog
+    await sessionLog.deleteOne()
+    await cancelCheckout(req.id)
+    return res.status(200).send('Checkout cancelled')
+}
+
+const cancelId = async (req,res) => {
+    const {sessionId } = req.params
+
+    //validate query
+    if (typeof sessionId !== "string") {
+        return res.status(400).send("Invalid input"); 
+    }
+
+    //throws an error if the session has already been expired or has completed
+    await stripe.checkout.sessions.expire(
+    sessionId
+    );
+    //find the user
+    const sessionLog = await SessionLog.findOne({
+        sessionId: sessionId
+    })
+
+    if (!sessionLog) {
+        return res.status(400).send('Checkout session not found')
+        //maybe we should check actual stripe with session id to see if it is a valid sessionId and display success message
+    }
+
+    await sessionLog.deleteOne()
+    await cancelCheckout(sessionLog.user)
+    return res.status(200).send('Checkout cancelled')
+
+}
+module.exports = { getCart, postItem, deleteItem, checkout, cancel, cancelId};

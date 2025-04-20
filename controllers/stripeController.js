@@ -2,9 +2,9 @@
 // See your keys here: https://dashboard.stripe.com/apikeys
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 const fulfillCheckout = require("./utils/fullfillCheckout")
-// If you are testing your webhook locally with the Stripe CLI you
-// can find the endpoint's secret by running `stripe listen`
-// Otherwise, find your endpoint's secret in your webhook settings in the Developer Dashboard
+const cancelCheckout = require("./utils/cancelCheckout")
+const SessionLog = require("./../models/sessionLogModel")
+
 const endpointSecret = process.env.STRIPE_WH_SECRET;
 
 webhook = async (request, response) => {
@@ -24,6 +24,17 @@ webhook = async (request, response) => {
         event.type === "checkout.session.async_payment_succeeded"
     ) {
         fulfillCheckout(event.data.object.id);
+    } else if (event.type === "checkout.session.expired" ||
+               event.type === 'checkout.session.async_payment_failed') {
+        //get sessionLog
+        const sessionLog = SessionLog.findOne({
+            sessionId: event.data.object.id
+        })
+
+        if (sessionLog) {
+            await sessionLog.deleteOne()
+            cancelCheckout(sessionLog.user)
+        }
     }
 
     response.status(200).end();

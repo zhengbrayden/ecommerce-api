@@ -10,5 +10,8 @@ route.use(express.json());
 route.get("/", cartController.getCart);
 route.post("/:itemid", cartController.postItem);
 route.delete("/:itemid", cartController.deleteItem);
-route.put("/", cartController.checkout);
+route.post("/", cartController.checkout);
+route.post('/cancel', cartController.cancel)
+route.get('/cancel/:sessionId', cartController.cancelId)
+
 module.exports = route;

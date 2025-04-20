@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Transaction = require("../../models/transactionModel");
-const User = require("./../../models/userModel");
+const SessionLog = require("./../../models/sessionLogModel");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 const RETRY_LIMIT = 3
 
@@ -16,13 +16,12 @@ async function fulfillCheckout(sessionId) {
 
     //invalid session id
     if (!checkoutSession) {
-        return
+        throw new Error('Invalid session')
     }
 
-    const userid = checkoutSession.client_reference_id;
     //check if session has actually been paid
     if (checkoutSession.payment_status === "unpaid") {
-        return;
+        throw new Error('Session not paid')
     }
 
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,33 +32,35 @@ async function fulfillCheckout(sessionId) {
 
         //to fulfill an order, all we do for now is create a transaction record
         session = await mongoose.startSession();
-        //error variables
-        let alreadyFulfilled = false;
+
         try {
             await session.withTransaction(async () => {
-                //check if the order has already been fulfilled
-                let transaction = await Transaction.findOne({
-                    stripeSessionId: sessionId,
-                }).session(session);
 
-                if (transaction) {
-                    alreadyFulfilled = true;
-                    return;
+                //check if the order has already been fulfilled
+                let sessionLog = await SessionLog.findOne({
+                    stripeSessionId: sessionId,
+                }).session(session).populate('user');
+
+                if (!sessionLog) {
+                    //already been fulfilled
+                    return
                 }
 
+                const user = sessionLog.user
+
                 //the order. fulfill the order
-                let user = await User.findById(userid).session(session);
-                transaction = new Transaction({
-                    stripeSessionId: sessionId,
+                const transaction = new Transaction({
                     cart: user.cart,
-                    userid: userid,
-                });
+                    user: user
+                })
 
                 //clear the user cart
                 user.cart = [];
                 user.paymentPending = false;
                 await user.save({ session });
                 await transaction.save({session})
+                //delete the sessionLog
+                await sessionLog.deleteOne({session})
             });
             break; // transaction succeeded
         } catch (err) {
@@ -79,8 +80,8 @@ async function fulfillCheckout(sessionId) {
                 await delay(backoff + jitter);
             } else {
                 console.error("Transaction error:", err);
-                return
-            }
+                throw err
+                }
         }
     }
 

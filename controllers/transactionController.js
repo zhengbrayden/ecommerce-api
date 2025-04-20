@@ -1,4 +1,5 @@
 const Transaction = require("./../models/itemModel");
+const SessionLog = require("./../models/sessionLogModel")
 const fulfillCheckout = require('./utils/fullfillCheckout')
 
 //get items with pagination
@@ -18,15 +19,31 @@ const getTransactions = async (req, res) => {
     res.json({ data: transactions, page, limit, total });
 };
 
-const success = async (req, res) => {
-    const {sessionId } = req.query
+const successId = async (req, res) => {
+    const {sessionId } = req.params
     //validate query
     if (typeof sessionId !== "string") {
         return res.status(400).send("Invalid input"); 
     }
 
-    fulfillCheckout(sessionId)
-    response.status(200).send('order was successful. View your transaction');
+    await fulfillCheckout(sessionId)
+    //if no error thrown
+    res.status(200).send('Checkout successful, view your transaction');
 }
 
-module.exports = { getTransactions , success};
+const success =  async (req, res) => {
+    const sessionLog = await SessionLog.findOne({
+        user: req.id
+    })
+
+    //check if exist
+    if (!sessionLog) {
+        //This user doesnt have an active valid checkout
+        return response.status(400).send('No checkout session found')
+    }
+    await fulfillCheckout(sessionLog.sessionId)
+    //if no error thrown
+    res.status(200).send('Checkout successful, view your transaction');
+
+}
+module.exports = { getTransactions , success, successId};
