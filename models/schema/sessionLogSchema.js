@@ -9,7 +9,8 @@ const sessionLogSchema = new mongoose.Schema(
             required: true,
         },
         sessionId: {type: String,
-        required: true}
+        required: true,
+        unique: true}
     },
 );
 

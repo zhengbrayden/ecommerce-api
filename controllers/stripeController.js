@@ -4,10 +4,50 @@ const stripe = require("stripe")(process.env.STRIPE_KEY);
 const fulfillCheckout = require("./utils/fullfillCheckout")
 const cancelCheckout = require("./utils/cancelCheckout")
 const SessionLog = require("./../models/sessionLogModel")
+const AsyncSessionLog = require('./../models/asyncSessionLogModel');
+
+const { mongoose } = require("mongoose");
 
 const endpointSecret = process.env.STRIPE_WH_SECRET;
 
-webhook = async (request, response) => {
+const revertTransaction = async (sessionId) => {
+    const session = await mongoose.startSession()
+
+    try {
+        await session.withTransaction(async () => {
+            const sessionLog = await AsyncSessionLog.findOne({
+                sessionId
+            }).session(session).populate({
+                path: 'transaction',
+                populate: {
+                    path : 'cart.item'
+                }
+        })
+
+            if (!sessionLog) {
+                return
+            }
+            //repopulate items
+            const cart = sessionLog.transaction.cart
+
+            for (const cartItem of cart) {
+                cartItem.item.quantity += cartItem.quantity
+                await cartItem.item.save({session})
+            }
+
+            //delete transaction
+            await sessionLog.transaction.deleteOne({session})
+            //delete sessionlog
+            await sessionLog.deleteOne({session})
+
+        })
+    } catch (err) {
+        session.endSession()
+        throw err
+    }
+}
+
+const webhook = async (request, response) => {
     const payload = request.body;
     const sig = request.headers["stripe-signature"];
 
@@ -20,12 +60,10 @@ webhook = async (request, response) => {
     }
 
     if (
-        event.type === "checkout.session.completed" ||
-        event.type === "checkout.session.async_payment_succeeded"
+        event.type === "checkout.session.completed"
     ) {
         fulfillCheckout(event.data.object.id);
-    } else if (event.type === "checkout.session.expired" ||
-               event.type === 'checkout.session.async_payment_failed') {
+    } else if (event.type === "checkout.session.expired") {
         //get sessionLog
         const sessionLog = SessionLog.findOne({
             sessionId: event.data.object.id
@@ -35,6 +73,8 @@ webhook = async (request, response) => {
             await sessionLog.deleteOne()
             cancelCheckout(sessionLog.user)
         }
+    } else if (event.type === "checkout.session.async_payment_failed") {
+        revertTransaction(event.data.object.id)
     }
 
     response.status(200).end();

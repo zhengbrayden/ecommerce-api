@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const Transaction = require("../../models/transactionModel");
 const SessionLog = require("./../../models/sessionLogModel");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
+const AsyncSessionLog = require('./../../models/asyncSessionLogModels')
+
 const RETRY_LIMIT = 3
 
 async function fulfillCheckout(sessionId) {
@@ -19,8 +21,8 @@ async function fulfillCheckout(sessionId) {
         throw new Error('Invalid session')
     }
 
-    //check if session has actually been paid
-    if (checkoutSession.payment_status === "unpaid") {
+    //check if session has actually been complete
+    if (checkoutSession.status !== "complete") {
         throw new Error('Session not paid')
     }
 
@@ -62,6 +64,15 @@ async function fulfillCheckout(sessionId) {
                 await transaction.save({session})
                 //delete the sessionLog
                 await sessionLog.deleteOne({session})
+
+                //if async payment
+                if (checkoutSession.payment_status === 'unpaid') {
+                    const asyncSessionLog = new AsyncSessionLog({
+                        sessionId,
+                        user
+                    })
+                    await asyncSessionLog.save({session})
+                }
             });
             break; // transaction succeeded
         } catch (err) {
