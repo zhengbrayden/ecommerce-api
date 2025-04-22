@@ -17,6 +17,9 @@ const cancelCheckout = async (userid) =>{
                 user.paymentPending = false
                 //for each item in the cart, restore the quantity, save
                 for (const cartItem of user.cart) {
+                    if (!cartItem.item) {
+                        continue
+                    }
                     cartItem.item.quantity += cartItem.quantity
                     await cartItem.item.save({session})
                 }

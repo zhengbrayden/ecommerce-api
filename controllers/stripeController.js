@@ -31,6 +31,11 @@ const revertTransaction = async (sessionId) => {
             const cart = sessionLog.transaction.cart
 
             for (const cartItem of cart) {
+                const item = cartItem.item
+                if (!item) {
+                    //the item was deleted so forget about it
+                    continue
+                }
                 cartItem.item.quantity += cartItem.quantity
                 await cartItem.item.save({session})
             }

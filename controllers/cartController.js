@@ -65,11 +65,16 @@ const postItem = async (req, res) => {
     let paymentPending = false;
     let notEnoughStock = false;
     let notFound = false;
+    let userNotFound = false;
 
     try {
         await session.withTransaction(async () => {
             const user = await User.findById(req.id).session(session);
-
+            //check if user is still with us
+            if (!user) {
+                userNotFound = true
+                return
+            }
             //check if payment is pending on cart
             if (user.paymentPending) {
                 paymentPending = true;
@@ -127,6 +132,8 @@ const postItem = async (req, res) => {
             .send("This cart cannot be modified when payment pending");
     } else if (notEnoughStock) {
         return res.status(404).send("Not enough stock");
+    }else if (userNotFound) {
+        return res.status(404).send('User has been deleted/banned')
     }
 
     res.status(201).json(cartItem);
@@ -162,11 +169,16 @@ const deleteItem = async (req, res) => {
     //error variables
     let paymentPending = false;
     let notFound = false;
+    let userNotFound = false;
 
     try {
         await session.withTransaction(async () => {
             const user = await User.findById(req.id).session(session);
-
+            
+            if (!user) {
+                userNotFound = true
+                return
+            }
             //check if payment is pending on cart
             if (user.paymentPending) {
                 paymentPending = true;
@@ -203,6 +215,8 @@ const deleteItem = async (req, res) => {
         return res.status(400).send(err.message);
     }
 
+    session.endSession();
+
     //check for errors
     if (notFound) {
         return res.status(404).send("Item not found");
@@ -210,9 +224,10 @@ const deleteItem = async (req, res) => {
         return res
             .status(400)
             .send("This cart cannot be modified when payment pending");
+    }else if (userNotFound) {
+        return res.status(404).send('User has been deleted/banned')
     }
 
-    session.endSession();
     //success
     res.sendStatus(204);
 };
@@ -226,10 +241,15 @@ const checkout = async (req, res) => {
     let emptyCart = false;
     let invalidCart = false;
     let paymentPending = false;
+    let userNotFound = false;
 
     try {
         await session.withTransaction(async () => {
             const user = await User.findById(req.id).session(session);
+            if (!user) {
+                userNotFound = true
+                return
+            }
             cart = user.cart;
             //cant checkout with empty cart
             if (cart.length === 0) {
@@ -315,6 +335,8 @@ const checkout = async (req, res) => {
         return;
     } else if (paymentPending) {
         res.status(400).send("already checking out");
+    } else if (userNotFound) {
+        res.status(404).send("User has been deleted or banned");
     }
 
     //send stripe session
