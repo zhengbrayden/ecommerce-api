@@ -1,12 +1,13 @@
 const mongoose = require("mongoose");
-const User = require("../../models/transactionModel");
+const User = require("../../models/userModel");
 
 const cancelCheckout = async (userid) =>{
         const session = await mongoose.startSession()
+
         try {
             await session.withTransaction(async () => {
                 //restore items, change the status of the user
-                const user = await User.FindById(userid).session(session).
+                const user = await User.findById(userid).session(session).
                 populate('cart.item')
 
                 if (user.paymentPending == false) {
@@ -16,12 +17,12 @@ const cancelCheckout = async (userid) =>{
                 user.paymentPending = false
                 //for each item in the cart, restore the quantity, save
                 for (const cartItem of user.cart) {
-                    user.cart.item.quantity += cartItem.quantity
-                    await user.cart.item.save({session})
+                    cartItem.item.quantity += cartItem.quantity
+                    await cartItem.item.save({session})
                 }
                 await user.save({session})
             })
-        } catch {
+        } catch (err) {
             session.endSession();
             console.error("Transaction error:", err);
             throw err

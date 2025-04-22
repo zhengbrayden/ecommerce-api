@@ -38,11 +38,12 @@ async function fulfillCheckout(sessionId) {
 
                 //check if the order has already been fulfilled
                 let sessionLog = await SessionLog.findOne({
-                    stripeSessionId: sessionId,
+                    sessionId: sessionId,
                 }).session(session).populate('user');
 
                 if (!sessionLog) {
                     //already been fulfilled
+                    console.log('this session has already been fulfilled')
                     return
                 }
 

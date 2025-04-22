@@ -40,4 +40,44 @@ webhook = async (request, response) => {
     response.status(200).end();
 };
 
-module.exports = { webhook };
+const cancel = async (req,res) => {
+    const {sessionId } = req.query
+
+    //validate query
+    if (typeof sessionId !== "string") {
+        return res.status(400).send("Invalid input"); 
+    }
+
+    //throws an error if the session has already been expired or has completed
+    await stripe.checkout.sessions.expire(
+    sessionId
+    );
+    //find the user
+    const sessionLog = await SessionLog.findOne({
+        sessionId: sessionId
+    })
+
+    if (!sessionLog) {
+        return res.status(400).send('Checkout session not found')
+        //maybe we should check actual stripe with session id to see if it is a valid sessionId and display success message
+    }
+
+    await sessionLog.deleteOne()
+    await cancelCheckout(sessionLog.user)
+    return res.status(200).send('Checkout cancelled')
+
+}
+
+const success = async (req, res) => {
+    const {sessionId } = req.query
+    //validate query
+    if (typeof sessionId !== "string") {
+        return res.status(400).send("Invalid input"); 
+    }
+
+    await fulfillCheckout(sessionId)
+    //if no error thrown
+    res.status(200).send('Checkout successful, view your transaction');
+}
+
+module.exports = { webhook , cancel, success};

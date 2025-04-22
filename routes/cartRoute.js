@@ -8,10 +8,8 @@ route.use(auth);
 route.use(express.json());
 //routes
 route.get("/", cartController.getCart);
-route.post("/:itemid", cartController.postItem);
-route.delete("/:itemid", cartController.deleteItem);
 route.post("/", cartController.checkout);
 route.post('/cancel', cartController.cancel)
-route.get('/cancel/:sessionId', cartController.cancelId)
-
+route.post("/:itemid", cartController.postItem);
+route.delete("/:itemid", cartController.deleteItem);
 module.exports = route;

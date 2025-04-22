@@ -1,10 +1,10 @@
 const User = require("./../models/userModel");
 const Item = require("./../models/itemModel");
-const SessionLog = require("./../models/sessionLogModel")
+const SessionLog = require("./../models/sessionLogModel");
 
 const mongoose = require("mongoose");
-const SessionLog = require("./../models/sessionLogModel");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
+
 const cancelCheckout = require('./utils/cancelCheckout')
 
 const getCart = async (req, res) => {
@@ -21,7 +21,7 @@ const getCart = async (req, res) => {
     const data = cart.map((cartItem) => {
         const item = itemMap.get(cartItem.item.toString());
         if (item) {
-            //in case item is deleted in between database reads
+            //in case item has been deleted
             return {
                 name: item.name,
                 quantity: cartItem.quantity,
@@ -38,6 +38,11 @@ const postItem = async (req, res) => {
     const { itemid } = req.params;
     //input validation
     if (typeof itemid !== "string") {
+        return res.status(400).send("Invalid input");
+    }
+
+    //req.body could be null
+    if (!req.body) {
         return res.status(400).send("Invalid input");
     }
 
@@ -133,6 +138,11 @@ const deleteItem = async (req, res) => {
 
     //input validation
     if (typeof itemid !== "string") {
+        return res.status(400).send("Invalid input");
+    }
+
+    //req.body could be null
+    if (!req.body) {
         return res.status(400).send("Invalid input");
     }
 
@@ -332,9 +342,9 @@ const checkout = async (req, res) => {
         client_reference_id: req.id,
         line_items: line_items,
         mode: "payment",
-        success_url: `${baseUrl}/transactions/success/` + 
+        success_url: `${baseUrl}/stripe/success?sessionId=` + 
         `{CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/cart/cancel/{CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/cart/cancel?sessionId={CHECKOUT_SESSION_ID}`,
     });
 
     //should store the session id in our database for easy access
@@ -351,7 +361,7 @@ const cancel = async (req,res) => {
 
     if (!sessionLog) {
         //no sessionlog but checkout status might still be active due to network issues
-        const user = await user.FindById(req.id)
+        const user = await User.findById(req.id)
 
         if (user.paymentPending == false) {
             return res.status(400).send('No checkout to cancel')
@@ -373,31 +383,4 @@ const cancel = async (req,res) => {
     return res.status(200).send('Checkout cancelled')
 }
 
-const cancelId = async (req,res) => {
-    const {sessionId } = req.params
-
-    //validate query
-    if (typeof sessionId !== "string") {
-        return res.status(400).send("Invalid input"); 
-    }
-
-    //throws an error if the session has already been expired or has completed
-    await stripe.checkout.sessions.expire(
-    sessionId
-    );
-    //find the user
-    const sessionLog = await SessionLog.findOne({
-        sessionId: sessionId
-    })
-
-    if (!sessionLog) {
-        return res.status(400).send('Checkout session not found')
-        //maybe we should check actual stripe with session id to see if it is a valid sessionId and display success message
-    }
-
-    await sessionLog.deleteOne()
-    await cancelCheckout(sessionLog.user)
-    return res.status(200).send('Checkout cancelled')
-
-}
-module.exports = { getCart, postItem, deleteItem, checkout, cancel, cancelId};
+module.exports = { getCart, postItem, deleteItem, checkout, cancel};

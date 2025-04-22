@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const cartItemSchema = require("./subSchema/cartItemSchema");
+const cartItemSchema = require("./schema/cartItemSchema");
 
 //define user model schema
 const userSchema = new mongoose.Schema({
