@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Transaction = require("../../models/transactionModel");
 const SessionLog = require("./../../models/sessionLogModel");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
-const AsyncSessionLog = require('./../../models/asyncSessionLogModels')
+const AsyncSessionLog = require('./../../models/asyncSessionLogModel')
 
 const RETRY_LIMIT = 3
 
@@ -52,9 +52,16 @@ async function fulfillCheckout(sessionId) {
                 const user = sessionLog.user
 
                 //the order. fulfill the order
+                let total = 0
+
+                for (const cartItem of user.cart){
+                    total += cartItem.priceAtCheckout
+                }
+
                 const transaction = new Transaction({
                     cart: user.cart,
-                    user: user
+                    email: user.email,
+                    total: total
                 })
 
                 //clear the user cart

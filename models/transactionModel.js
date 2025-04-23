@@ -1,14 +1,11 @@
 const mongoose = require("mongoose");
-const cartItemSchema = require("./schema/cartItemSchema");
-
+const cartItemSchema = require('./schema/cartItemSchema')
+//except instead of using the item, we will use the 
 const transactionSchema = new mongoose.Schema(
     {
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
+        email: String,
         cart: [cartItemSchema],
+        total: Number
     },
     { timestamps: true },
 );

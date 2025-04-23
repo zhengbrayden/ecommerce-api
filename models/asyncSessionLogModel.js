@@ -1,5 +1,6 @@
 const sessionLogSchema = require('./schema/sessionLogSchema')
 const mongoose = require('mongoose')
+const cartItemSchema = require('./schema/cartItemSchema')
 
 const asyncSessionLogSchema = new mongoose.Schema(
     {

@@ -12,6 +12,12 @@ const cartItemSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
+        priceAtCheckout: {
+            type: Number
+        },
+        name: {
+            type: String
+        }
     },
     { _id: false },
 );

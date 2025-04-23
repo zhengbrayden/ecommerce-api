@@ -9,15 +9,25 @@ const cancelCheckout = require('./utils/cancelCheckout')
 
 const getCart = async (req, res) => {
     //get all items in the cart and send the info to the user
-    const cart = (await User.findById(req.id)).cart;
+    const user = await User.findById(req.id)
+    const cart = user.cart
     //in the cart we store item ids but we actually need the name to give the user
     const itemIds = cart.map((cartItem) => cartItem.item);
     const items = await Item.find({ _id: { $in: itemIds } });
     const itemMap = new Map();
+    let total = 0
 
-    for (const item of items) {
-        itemMap.set(item.id, item);
+    if (user.paymentPending) {
+        for (const cartItem of cart) {
+            total += cartItem.priceAtCheckout
+        }
+    } else {
+        for (const item of items) {
+            itemMap.set(item.id, item);
+            total += item.price
+        }
     }
+
     const data = cart.map((cartItem) => {
         const item = itemMap.get(cartItem.item.toString());
         if (item) {
@@ -30,7 +40,7 @@ const getCart = async (req, res) => {
         }
     });
 
-    res.json({ data: data });
+    res.json({ data, total });
 };
 
 const postItem = async (req, res) => {
@@ -284,6 +294,8 @@ const checkout = async (req, res) => {
                 }
 
                 item.quantity -= cartItem.quantity;
+                //set the price at checkout
+                cartItem.priceAtCheckout = item.price
 
                 if (item.quantity < 0) {
                     //cannot proceed with this checkout, must remove this item from the cart
@@ -312,6 +324,9 @@ const checkout = async (req, res) => {
             for (const item of items) {
                 await item.save({ session });
             }
+
+            await cart.save({session})
+
             //set user status to payment pending
             user.paymentPending = true;
             await user.save({ session });
@@ -349,7 +364,7 @@ const checkout = async (req, res) => {
         const price_data = {
             currency: "cad",
             product_data: product_data,
-            unit_amount: item.price,
+            unit_amount: cartItem.priceAtCheckout,
         };
 
         return {
