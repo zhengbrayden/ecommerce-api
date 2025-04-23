@@ -93,10 +93,6 @@ const cancel = async (req,res) => {
         return res.status(400).send("Invalid input"); 
     }
 
-    //throws an error if the session has already been expired or has completed
-    await stripe.checkout.sessions.expire(
-    sessionId
-    );
     //find the user
     const sessionLog = await SessionLog.findOne({
         sessionId: sessionId
@@ -104,8 +100,12 @@ const cancel = async (req,res) => {
 
     if (!sessionLog) {
         return res.status(400).send('Checkout session not found')
-        //maybe we should check actual stripe with session id to see if it is a valid sessionId and display success message
     }
+
+    //throws an error if the session has already been expired or has completed
+    await stripe.checkout.sessions.expire(
+    sessionId
+    );
 
     await sessionLog.deleteOne()
     await cancelCheckout(sessionLog.user)
