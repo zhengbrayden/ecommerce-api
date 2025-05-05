@@ -20,7 +20,7 @@ const getTransactions = async (req, res) => {
         await session.withTransaction(async () => {
             transactions = await Transaction.find({ user: req.id })
                 .session(session)
-                .sort({updatedAt : -1})
+                .sort({createdAt : -1})
                 .skip((page - 1) * limit)
                 .limit(limit);
             total = await Transaction.countDocuments({ user: req.id })

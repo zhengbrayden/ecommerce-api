@@ -19,6 +19,7 @@ const getItems = async (req, res) => {
     if (Number.isNaN(page) || Number.isNaN(limit)) {
         return res.status(400).send("Invalid input");
     }
+
     const re = new RegExp(`^${escapeRegex(search)}`, "i");
     const session = await mongoose.startSession()
     let items;

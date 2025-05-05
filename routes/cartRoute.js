@@ -11,5 +11,5 @@ route.get("/", cartController.getCart);
 route.post("/", cartController.checkout);
 route.post('/cancel', cartController.cancel)
 route.post("/:itemid", cartController.postItem);
-route.delete("/:itemid", cartController.deleteItem);
+route.post("/remove/:itemid", cartController.deleteItem);
 module.exports = route;

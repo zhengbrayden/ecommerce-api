@@ -86,7 +86,7 @@ const webhook = async (request, response) => {
 };
 
 const cancel = async (req,res) => {
-    const {sessionId } = req.query
+    const {sessionId} = req.query
 
     //validate query
     if (typeof sessionId !== "string") {

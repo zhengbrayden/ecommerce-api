@@ -15,6 +15,8 @@ const cartRoute = require("./cartRoute");
 const itemRoute = require("./itemRoute");
 const stripeRoute = require("./stripeRoute");
 const transactionRoute = require("./transactionRoute");
+const adminRoute = require('./adminRoute')
+route.use('/admin', adminRoute)
 route.use("/cart", cartRoute);
 route.use("/items", itemRoute);
 route.use("/stripe", stripeRoute);

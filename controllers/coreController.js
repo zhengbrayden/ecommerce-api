@@ -17,7 +17,6 @@ const register = async (req, res) => {
     }
 
     //create new user and add to mongoDB
-    const paymentPending = false;
     user = new User({ email, password });
     await user.save();
 

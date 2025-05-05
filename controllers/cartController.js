@@ -400,6 +400,10 @@ const cancel = async (req,res) => {
         //no sessionlog but checkout status might still be active due to network issues
         const user = await User.findById(req.id)
 
+        if (!user) {
+            return res.status(404).send('user not found')
+        }
+
         if (user.paymentPending == false) {
             return res.status(400).send('No checkout to cancel')
         }
