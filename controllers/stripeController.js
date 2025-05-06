@@ -80,6 +80,14 @@ const webhook = async (request, response) => {
         }
     } else if (event.type === "checkout.session.async_payment_failed") {
         revertTransaction(event.data.object.id)
+    } else if (event.type === "checkout.session.async_payment_succeeded"){
+        //just delete the async session log
+        
+        const sessionLog = await AsyncSessionLog.findOne({
+                sessionId
+            })
+
+        await sessionLog.deleteOne()
     }
 
     response.status(200).end();
