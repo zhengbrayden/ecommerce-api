@@ -381,7 +381,7 @@ const checkout = async (req, res) => {
         mode: "payment",
         success_url: `${baseUrl}/stripe/success?sessionId=` + 
         `{CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/cart/cancel?sessionId={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/stripe/cancel?sessionId={CHECKOUT_SESSION_ID}`,
     });
 
     //should store the session id in our database for easy access

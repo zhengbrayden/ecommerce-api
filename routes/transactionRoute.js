@@ -6,5 +6,5 @@ const auth = require("./middleware/auth");
 route.use(express.json());
 route.use(auth);
 route.get("/", transactionController.getTransactions);
-route.get('/success', transactionController.success)
+route.post('/success', transactionController.success)
 module.exports = route;
