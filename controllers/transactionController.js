@@ -3,7 +3,7 @@ const SessionLog = require("./../models/sessionLogModel")
 const fulfillCheckout = require('./utils/fullfillCheckout')
 const mongoose = require('mongoose')
 
-//get items with pagination
+//get transactions with pagination
 const getTransactions = async (req, res) => {
     const page = Number.parseInt(req.query.page);
     const limit = Number.parseInt(req.query.limit);

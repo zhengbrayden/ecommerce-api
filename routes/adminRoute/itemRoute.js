@@ -1,6 +1,6 @@
 const express = require('express')
-const itemController = require(global.__dirname +
-'/controllers/adminController/itemController')
+const itemController = require('@root/controllers/' +
+'adminController/itemController')
 const router = express.Router()
 
 //routes

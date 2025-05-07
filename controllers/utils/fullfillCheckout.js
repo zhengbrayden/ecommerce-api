@@ -67,10 +67,6 @@ async function fulfillCheckout(sessionId) {
                 //clear the user cart
                 user.cart = [];
                 user.paymentPending = false;
-                await user.save({ session });
-                await transaction.save({session})
-                //delete the sessionLog
-                await sessionLog.deleteOne({session})
 
                 //if async payment
                 if (checkoutSession.payment_status === 'unpaid') {
@@ -78,8 +74,16 @@ async function fulfillCheckout(sessionId) {
                         sessionId,
                         user
                     })
+                    
+                    //set transaction to payment pending
+                    transaction.paymentPending = true
                     await asyncSessionLog.save({session})
+
                 }
+                await user.save({ session });
+                //delete the sessionLog
+                await sessionLog.deleteOne({session})
+                await transaction.save({session})
             });
             break; // transaction succeeded
         } catch (err) {

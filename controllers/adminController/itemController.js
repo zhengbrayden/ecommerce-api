@@ -1,4 +1,4 @@
-const Item = require(global.__dirname + '/models/itemModel')
+const Item = require('@root/models/itemModel')
 
 const postItem = async (req, res) => {
     const name = req.body.name
@@ -97,6 +97,6 @@ const updateItem = async (req, res) => {
     }
 
     await item.save()
-    res.status(200).send(item)
+    res.status(201).send(item)
 }
 module.exports = {postItem, deleteItem, updateItem}
