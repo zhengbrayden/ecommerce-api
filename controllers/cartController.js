@@ -294,8 +294,9 @@ const checkout = async (req, res) => {
                 }
 
                 item.quantity -= cartItem.quantity;
-                //set the price at checkout
+                //set the price and name at checkout
                 cartItem.priceAtCheckout = item.price;
+                cartItem.name = item.name
 
                 if (item.quantity < 0) {
                     //cannot proceed with this checkout, must remove this item from the cart
@@ -324,8 +325,6 @@ const checkout = async (req, res) => {
             for (const item of items) {
                 await item.save({ session });
             }
-
-            await cart.save({ session });
 
             //set user status to payment pending
             user.paymentPending = true;

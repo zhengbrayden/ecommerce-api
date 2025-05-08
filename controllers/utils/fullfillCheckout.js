@@ -55,7 +55,7 @@ async function fulfillCheckout(sessionId) {
                 let total = 0;
 
                 for (const cartItem of user.cart) {
-                    total += cartItem.priceAtCheckout;
+                    total += cartItem.priceAtCheckout * cartItem.quantity;
                 }
 
                 const transaction = new Transaction({

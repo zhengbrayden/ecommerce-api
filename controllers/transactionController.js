@@ -2,6 +2,7 @@ const Transaction = require("./../models/transactionModel");
 const SessionLog = require("./../models/sessionLogModel");
 const fulfillCheckout = require("./utils/fullfillCheckout");
 const mongoose = require("mongoose");
+const User = require('../models/userModel')
 
 //get transactions with pagination
 const getTransactions = async (req, res) => {
@@ -18,12 +19,14 @@ const getTransactions = async (req, res) => {
 
     try {
         await session.withTransaction(async () => {
-            transactions = await Transaction.find({ user: req.id })
+            const email = (await User.findById(req.id).session(session))
+                .email
+            transactions = await Transaction.find({ email })
                 .session(session)
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit);
-            total = await Transaction.countDocuments({ user: req.id }).session(
+            total = await Transaction.countDocuments({ email }).session(
                 session,
             );
         });
