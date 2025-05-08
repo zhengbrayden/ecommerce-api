@@ -4,8 +4,8 @@ const stripe = require("stripe")(process.env.STRIPE_KEY);
 const fulfillCheckout = require("./utils/fullfillCheckout")
 const cancelCheckout = require("./utils/cancelCheckout")
 const SessionLog = require("./../models/sessionLogModel")
-const revertTransaction = require('utils/asyncPayment/revertTransaction')
-const completeTransaction = require('utils/asyncPayment/completeTransaction')
+const revertTransaction = require('./utils/asyncPayment/revertTransaction')
+const completeTransaction = require('./utils/asyncPayment/completeTransaction')
 
 const endpointSecret = process.env.STRIPE_WH_SECRET;
 

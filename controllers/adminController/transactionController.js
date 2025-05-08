@@ -4,7 +4,7 @@ const mongoose = require('mongoose')
 const completeTransaction = require('@root/controllers/utils/' +
 'asyncPayment/completeTransaction')
 const revertTransaction = require('@root/controllers/utils/' +
-'asycPayment/revertTransaction')
+'asyncPayment/revertTransaction')
 //get transactions with pagination
 const getTransactions = async (req, res) => {
     const page = Number.parseInt(req.query.page);
