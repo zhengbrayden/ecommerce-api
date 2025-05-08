@@ -1,31 +1,31 @@
-const mongoose = require('mongoose')
-const AsyncSessionLog = require('@root/models/asyncSessionLogModel')
+const mongoose = require("mongoose");
+const AsyncSessionLog = require("@root/models/asyncSessionLogModel");
 
 const completeTransaction = async (sessionId) => {
     //just delete the async session log and also reset payment pending
     const sessionLog = await AsyncSessionLog.findOne({
-        sessionId
-    }).populate({path: 'transaction'})
+        sessionId,
+    }).populate({ path: "transaction" });
 
     if (!sessionLog) {
-        return
+        return;
     }
 
-    const transaction = sessionLog.transaction
-    const session = await mongoose.startSession()
+    const transaction = sessionLog.transaction;
+    const session = await mongoose.startSession();
 
     try {
         await session.withTransaction(async () => {
-            transaction.paymentPending = false
-            await transaction.save({session})
-            await sessionLog.deleteOne({session})
-        })
+            transaction.paymentPending = false;
+            await transaction.save({ session });
+            await sessionLog.deleteOne({ session });
+        });
     } catch (err) {
-        session.endSession()
-        throw err
+        session.endSession();
+        throw err;
     }
 
-    session.endSession()
-}
+    session.endSession();
+};
 
-module.exports = completeTransaction
+module.exports = completeTransaction;

@@ -5,26 +5,26 @@ const SessionLog = require("./../models/sessionLogModel");
 const mongoose = require("mongoose");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 
-const cancelCheckout = require('./utils/cancelCheckout')
+const cancelCheckout = require("./utils/cancelCheckout");
 
 const getCart = async (req, res) => {
     //get all items in the cart and send the info to the user
-    const user = await User.findById(req.id)
-    const cart = user.cart
+    const user = await User.findById(req.id);
+    const cart = user.cart;
     //in the cart we store item ids but we actually need the name to give the user
     const itemIds = cart.map((cartItem) => cartItem.item);
     const items = await Item.find({ _id: { $in: itemIds } });
     const itemMap = new Map();
-    let total = 0
+    let total = 0;
 
     if (user.paymentPending) {
         for (const cartItem of cart) {
-            total += cartItem.priceAtCheckout
+            total += cartItem.priceAtCheckout;
         }
     } else {
         for (const item of items) {
             itemMap.set(item.id, item);
-            total += item.price
+            total += item.price;
         }
     }
 
@@ -82,8 +82,8 @@ const postItem = async (req, res) => {
             const user = await User.findById(req.id).session(session);
             //check if user is still with us
             if (!user) {
-                userNotFound = true
-                return
+                userNotFound = true;
+                return;
             }
             //check if payment is pending on cart
             if (user.paymentPending) {
@@ -142,8 +142,8 @@ const postItem = async (req, res) => {
             .send("This cart cannot be modified when payment pending");
     } else if (notEnoughStock) {
         return res.status(404).send("Not enough stock");
-    }else if (userNotFound) {
-        return res.status(404).send('User has been deleted/banned')
+    } else if (userNotFound) {
+        return res.status(404).send("User has been deleted/banned");
     }
 
     res.status(201).json(cartItem);
@@ -184,10 +184,10 @@ const deleteItem = async (req, res) => {
     try {
         await session.withTransaction(async () => {
             const user = await User.findById(req.id).session(session);
-            
+
             if (!user) {
-                userNotFound = true
-                return
+                userNotFound = true;
+                return;
             }
             //check if payment is pending on cart
             if (user.paymentPending) {
@@ -234,8 +234,8 @@ const deleteItem = async (req, res) => {
         return res
             .status(400)
             .send("This cart cannot be modified when payment pending");
-    }else if (userNotFound) {
-        return res.status(404).send('User has been deleted/banned')
+    } else if (userNotFound) {
+        return res.status(404).send("User has been deleted/banned");
     }
 
     //success
@@ -257,8 +257,8 @@ const checkout = async (req, res) => {
         await session.withTransaction(async () => {
             const user = await User.findById(req.id).session(session);
             if (!user) {
-                userNotFound = true
-                return
+                userNotFound = true;
+                return;
             }
             cart = user.cart;
             //cant checkout with empty cart
@@ -295,7 +295,7 @@ const checkout = async (req, res) => {
 
                 item.quantity -= cartItem.quantity;
                 //set the price at checkout
-                cartItem.priceAtCheckout = item.price
+                cartItem.priceAtCheckout = item.price;
 
                 if (item.quantity < 0) {
                     //cannot proceed with this checkout, must remove this item from the cart
@@ -325,7 +325,7 @@ const checkout = async (req, res) => {
                 await item.save({ session });
             }
 
-            await cart.save({session})
+            await cart.save({ session });
 
             //set user status to payment pending
             user.paymentPending = true;
@@ -379,49 +379,47 @@ const checkout = async (req, res) => {
         client_reference_id: req.id,
         line_items: line_items,
         mode: "payment",
-        success_url: `${baseUrl}/stripe/success?sessionId=` + 
-        `{CHECKOUT_SESSION_ID}`,
+        success_url:
+            `${baseUrl}/stripe/success?sessionId=` + `{CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/stripe/cancel?sessionId={CHECKOUT_SESSION_ID}`,
     });
 
     //should store the session id in our database for easy access
-    const sessionLog = new SessionLog({user : req.id, sessionId: session.id})
-    await sessionLog.save()
+    const sessionLog = new SessionLog({ user: req.id, sessionId: session.id });
+    await sessionLog.save();
     res.json({ url: session.url });
 };
 
-const cancel = async (req,res) => {
+const cancel = async (req, res) => {
     //get the sessionlog based on user
     const sessionLog = await SessionLog.findOne({
-        user: req.id
-    })
+        user: req.id,
+    });
 
     if (!sessionLog) {
         //no sessionlog but checkout status might still be active due to network issues
-        const user = await User.findById(req.id)
+        const user = await User.findById(req.id);
 
         if (!user) {
-            return res.status(404).send('user not found')
+            return res.status(404).send("user not found");
         }
 
         if (user.paymentPending == false) {
-            return res.status(400).send('No checkout to cancel')
+            return res.status(400).send("No checkout to cancel");
         }
 
         //there is an ongoing checkout
-        await cancelCheckout(req.id)
-        return res.status(200).send('Checkout cancelled')
+        await cancelCheckout(req.id);
+        return res.status(200).send("Checkout cancelled");
     }
 
     //throws an error if the session has already been expired or has completed or if it simply doesnt work
-    await stripe.checkout.sessions.expire(
-    sessionLog.sessionId
-    );
+    await stripe.checkout.sessions.expire(sessionLog.sessionId);
 
     //delete sessionlog
-    await sessionLog.deleteOne()
-    await cancelCheckout(req.id)
-    return res.status(200).send('Checkout cancelled')
-}
+    await sessionLog.deleteOne();
+    await cancelCheckout(req.id);
+    return res.status(200).send("Checkout cancelled");
+};
 
-module.exports = { getCart, postItem, deleteItem, checkout, cancel};
+module.exports = { getCart, postItem, deleteItem, checkout, cancel };

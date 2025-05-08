@@ -1,5 +1,5 @@
 const Item = require("./../models/itemModel");
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 function escapeRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -21,15 +21,15 @@ const getItems = async (req, res) => {
     }
 
     const re = new RegExp(`^${escapeRegex(search)}`, "i");
-    const session = await mongoose.startSession()
+    const session = await mongoose.startSession();
     let items;
     let total;
 
     try {
-        await session.withTransaction(async() => {
+        await session.withTransaction(async () => {
             items = await Item.find({ name: re })
-            .skip((page - 1) * limit)
-            .limit(limit);
+                .skip((page - 1) * limit)
+                .limit(limit);
             items = items.map((item) => {
                 return {
                     id: item.id,
@@ -39,14 +39,14 @@ const getItems = async (req, res) => {
                 };
             });
             total = await Item.countDocuments({ name: re });
-        })
+        });
     } catch (err) {
         session.endSession();
         console.error("Transaction error:", err);
-        return res.status(400).send(err.message); 
+        return res.status(400).send(err.message);
     }
 
-    session.endSession()
+    session.endSession();
     res.json({ data: items, page, limit, total });
 };
 

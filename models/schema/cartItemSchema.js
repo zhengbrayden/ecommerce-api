@@ -13,11 +13,11 @@ const cartItemSchema = new mongoose.Schema(
             required: true,
         },
         priceAtCheckout: {
-            type: Number
+            type: Number,
         },
         name: {
-            type: String
-        }
+            type: String,
+        },
     },
     { _id: false },
 );

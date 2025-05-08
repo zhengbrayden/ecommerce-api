@@ -6,7 +6,7 @@ const route = express.Router();
 route.use(express.raw({ type: "application/json" }));
 
 route.post("/webhook", stripeController.webhook);
-route.get("/success", stripeController.success)
-route.get("/cancel", stripeController.cancel)
+route.get("/success", stripeController.success);
+route.get("/cancel", stripeController.cancel);
 
-module.exports = route
+module.exports = route;

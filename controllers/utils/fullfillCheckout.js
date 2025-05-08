@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 const Transaction = require("../../models/transactionModel");
 const SessionLog = require("./../../models/sessionLogModel");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
-const AsyncSessionLog = require('./../../models/asyncSessionLogModel')
+const AsyncSessionLog = require("./../../models/asyncSessionLogModel");
 
-const RETRY_LIMIT = 3
+const RETRY_LIMIT = 3;
 
 async function fulfillCheckout(sessionId) {
     // Set your secret key. Remember to switch to your live secret key in production.
@@ -18,12 +18,12 @@ async function fulfillCheckout(sessionId) {
 
     //invalid session id
     if (!checkoutSession) {
-        throw new Error('Invalid session')
+        throw new Error("Invalid session");
     }
 
     //check if session has actually been complete
     if (checkoutSession.status !== "complete") {
-        throw new Error('Session not paid')
+        throw new Error("Session not paid");
     }
 
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -31,59 +31,58 @@ async function fulfillCheckout(sessionId) {
     let session;
 
     while (true) {
-
         //to fulfill an order, all we do for now is create a transaction record
         session = await mongoose.startSession();
 
         try {
             await session.withTransaction(async () => {
-
                 //check if the order has already been fulfilled
                 let sessionLog = await SessionLog.findOne({
                     sessionId: sessionId,
-                }).session(session).populate('user');
+                })
+                    .session(session)
+                    .populate("user");
 
                 if (!sessionLog) {
                     //already been fulfilled
-                    console.log('this session has already been fulfilled')
-                    return
+                    console.log("this session has already been fulfilled");
+                    return;
                 }
 
-                const user = sessionLog.user
+                const user = sessionLog.user;
 
                 //the order. fulfill the order
-                let total = 0
+                let total = 0;
 
-                for (const cartItem of user.cart){
-                    total += cartItem.priceAtCheckout
+                for (const cartItem of user.cart) {
+                    total += cartItem.priceAtCheckout;
                 }
 
                 const transaction = new Transaction({
                     cart: user.cart,
                     email: user.email,
-                    total: total
-                })
+                    total: total,
+                });
 
                 //clear the user cart
                 user.cart = [];
                 user.paymentPending = false;
 
                 //if async payment
-                if (checkoutSession.payment_status === 'unpaid') {
+                if (checkoutSession.payment_status === "unpaid") {
                     const asyncSessionLog = new AsyncSessionLog({
                         sessionId,
-                        user
-                    })
-                    
-                    //set transaction to payment pending
-                    transaction.paymentPending = true
-                    await asyncSessionLog.save({session})
+                        user,
+                    });
 
+                    //set transaction to payment pending
+                    transaction.paymentPending = true;
+                    await asyncSessionLog.save({ session });
                 }
                 await user.save({ session });
                 //delete the sessionLog
-                await sessionLog.deleteOne({session})
-                await transaction.save({session})
+                await sessionLog.deleteOne({ session });
+                await transaction.save({ session });
             });
             break; // transaction succeeded
         } catch (err) {
@@ -103,8 +102,8 @@ async function fulfillCheckout(sessionId) {
                 await delay(backoff + jitter);
             } else {
                 console.error("Transaction error:", err);
-                throw err
-                }
+                throw err;
+            }
         }
     }
 
@@ -112,4 +111,4 @@ async function fulfillCheckout(sessionId) {
     session.endSession();
 }
 
-module.exports = fulfillCheckout
+module.exports = fulfillCheckout;
