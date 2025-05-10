@@ -6,14 +6,14 @@ const postItem = async (req, res) => {
     const price = Number.parseInt(req.body.price);
 
     //input validation
-    if (Number.isNan(quantity)) {
+    if (Number.isNaN(quantity)) {
         return res.status(400).send("Invalid input");
     }
     if (quantity < 0) {
         return res.status(400).send("quantity cannot be less than 0");
     }
 
-    if (Number.isNan(price)) {
+    if (Number.isNaN(price)) {
         return res.status(400).send("Invalid input");
     }
     if (price < 0) {
@@ -59,7 +59,7 @@ const updateItem = async (req, res) => {
     if (quantity !== undefined) {
         quantity = Number.parseInt(quantity);
 
-        if (Number.isNan(quantity) || quantity < 0) {
+        if (Number.isNaN(quantity) || quantity < 0) {
             return res.status(400).send("Invalid input quantity");
         }
     } else {
@@ -68,7 +68,7 @@ const updateItem = async (req, res) => {
     if (price !== undefined) {
         price = Number.parseInt(price);
 
-        if (Number.isNan(price) || price < 0) {
+        if (Number.isNaN(price) || price < 0) {
             return res.status(400).send("Invalid input price");
         }
     }
@@ -77,7 +77,7 @@ const updateItem = async (req, res) => {
         return res.status(400).send("Invalid input");
     }
 
-    const item = Item.findById(id);
+    const item = await Item.findById(id);
 
     if (!item) {
         return res.status(404).send("Item not found");

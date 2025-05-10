@@ -36,7 +36,7 @@ const getTransactions = async (req, res) => {
     }
 
     session.endSession();
-    res.json({ transactions, page, limit, total });
+    res.json({ data: transactions, page, limit, total });
 };
 
 const satisfyTransaction = async (req, res) => {
