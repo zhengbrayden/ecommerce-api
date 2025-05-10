@@ -4,7 +4,7 @@ const auth = require("./middleware/auth");
 const User = require("../models/userModel");
 const itemRoute = require("./adminRoute/itemRoute");
 const transactionRoute = require("./adminRoute/transactionRoute");
-
+const registerRoute = require('./adminRoute/registerRoute')
 const adminAuth = async (req, res, next) => {
     //check that the user is an admin
     const user = await User.findById(req.id);
@@ -26,4 +26,5 @@ route.use(express.json());
 //routes
 route.use("/items", itemRoute);
 route.use("/transactions", transactionRoute);
+route.use('/register', registerRoute)
 module.exports = route;
