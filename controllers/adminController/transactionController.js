@@ -56,7 +56,7 @@ const satisfyTransaction = async (req, res) => {
     res.status(201).send("Transaction satisfied");
 };
 
-const ProcessPaymentStatus = async (req, res) => {
+const processPaymentStatus = async (req, res) => {
     const transactionid = req.params.id;
     //validation
     if (typeof id !== "string") {
@@ -94,4 +94,4 @@ const ProcessPaymentStatus = async (req, res) => {
         res.send("Payment was unsuccessful");
     }
 };
-module.exports = { getTransactions, satisfyTransaction, ProcessPaymentStatus };
+module.exports = { getTransactions, satisfyTransaction, processPaymentStatus };

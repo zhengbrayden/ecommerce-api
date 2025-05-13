@@ -44,7 +44,7 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://snails-app-0462ed495077.herokuapp.com/)
 
-* This project is RESTful API meant to serve as the back-end component of an E-commerce application. Through this API, users are able to register accounts, browse items in the store, edit their carts, and checkout and pay via a Stripe hosted checkout page. After a payment is confirmed, an order record is created which is viewable in a user's transaction history.
+* This project is RESTful API meant to serve as the backend component of an E-commerce application. Through this API, users are able to register accounts, browse items in the store, edit their carts, and checkout and pay via a Stripe hosted checkout page. After a payment is confirmed, an order record is created which is viewable in a user's transaction history.
 * On the administrative end of the application, admin authenticated users can edit the inventory of the store, process asynchronous payments, and track the status of orders.
 
 ![Stripe Screen Shot][stripe-screenshot]
@@ -67,27 +67,28 @@ The biggest challenge in creating this project was integrating with the Stripe A
 
 - Integrating with Stripe webhooks to receive events from Stripe when a checkout session was completed. Due to the nature of the internet, multiple webhooks could be sent for the same event, so I had to make sure my checkout fulfillment was idempotent. 
 - Due to the transient and unreliable nature of webhooks/the internet, creating a manual resolution option via pinging the Stripe API to ensure that checkouts would not be stuck in a permanent unresolved state. 
-- Tracking stripe checkout sessions using database records; Maintaing a good internal state of the app with respect to the state of Stripe; For example, making sure a user did not have access to payment before cancelling their checkout in internal state. Otherwise, the store owner would have to issue refunds and pay transaction costs out of pocket.
+- Tracking stripe checkout sessions using database records; Maintaining a good internal state of the app with respect to the state of Stripe; For example, making sure a user did not have access to payment before cancelling their checkout in internal state. Otherwise, the store owner would have to issue refunds and pay transaction costs out of pocket.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Notable features
 
 - Ability to cancel checkouts on the Stripe checkout page.
 - Ability to pay using asynchronous payments (payments that take days to complete) by tentatively placing orders.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Learning
-The primary aim of building this project was to learn as much as possible about back-end web development from the ground up. My learning includes:
-- How to design a concurrent application (web application), and the importance of database transactions for ACID principles.
-- Non-deterministic nature of the internet
-- Organization of an Express project
-- Design of web-apps using the abstractions of a front-end and back-end
+The primary aim of building this project was to learn as much as possible about backend web development from the ground up. My learning includes:
+- How to design a concurrent application (web application). How database transactions work and their importance for ACID principles.
+- Dealing with edge cases arising from the non-deterministic nature of the internet
+- Organizing an Express project
+- At a higher level, designing a web-app using the abstractions of a frontend and backend
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Roadmap
 
 - Refund feature
-- Front-end
+- Frontend
 - Display order information on payment success
 
 See the [open issues](https://github.com/zhengbrayden/ecommerce-api/issues) for a full list of proposed features (and known issues).
@@ -151,7 +152,7 @@ Project Link: [https://github.com/zhengbrayden/ecommerce-api](https://github.com
 [Express.js]: https://img.shields.io/badge/Express-222222?style=for-the-badge&logo=express&logoColor=white
 [Express-url]: https://expressjs.com/
 [MongoDB]: https://img.shields.io/badge/MongoDB-03AC0E?style=for-the-badge&logo=mongodb&logoColor=white
-[Mongo-url]: https://mongoosejs.com/
+[Mongo-url]: https://www.mongodb.com/
 [Stripe]: https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white
 [Stripe-url]: https://stripe.com/en-ca
 [Node]: https://img.shields.io/badge/Node-72A854?style=for-the-badge&logo=nodedotjs&logoColor=white
