@@ -116,7 +116,7 @@ Don't forget to give the project a star! Thanks again!
 <!-- CONTACT -->
 ## Contact
 
-Your Name - zhengbrayden@gmail.com
+Brayden Zheng - zhengbrayden@gmail.com
 
 Project Link: [https://github.com/zhengbrayden/ecommerce-api](https://github.com/zhengbrayden/ecommerce-api)
 
