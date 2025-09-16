@@ -43,7 +43,7 @@
 ## About The Project
 
 [![Product Name Screen Shot][product-screenshot]](https://snails-app-0462ed495077.herokuapp.com/)
-
+* *Click image for live project.
 * This project is a RESTful API meant to serve as the backend component of an E-commerce application. Through this API, users are able to register accounts, browse items in the store, edit their carts, and checkout and pay via a Stripe hosted checkout page. After a payment is confirmed, an order record is created which is viewable in a user's transaction history.
 * On the administrative end of the application, admin authenticated users can edit the inventory of the store, process asynchronous payments, and track the status of orders.
 
